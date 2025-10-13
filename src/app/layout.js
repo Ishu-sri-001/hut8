@@ -1,15 +1,25 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import localFont from "next/font/local";
+import LenisSmoothScroll from "@/components/Lenis/LenisScroll";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const Font1 = localFont({
+  src: [
+    { path: "./fonts/FranklinGothic-Book.woff2", weight: "300", style: "normal" },
+  ],
+  variable: '--font-body',
+  display: "swap",
+  fallback:["system-ui, sans-serif"],
+})
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const Font2 = localFont({
+  src: [
+    { path: "./fonts/FranklinGothic-Med.woff2", weight: "400", style: "normal" },
+  ],
+  variable: '--font-display',
+  display: "swap",
+  fallback:["system-ui, sans-serif"],
+})
 
 export const metadata = {
   title: "Create Next App",
@@ -19,9 +29,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <LenisSmoothScroll />
+      <body className={`${Font1.variable} ${Font2.variable} antialiased`}>
         {children}
       </body>
     </html>

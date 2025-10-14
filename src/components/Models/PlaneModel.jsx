@@ -16,23 +16,9 @@ function DotsModel({ modelRef, initialPosition, initialRotation, initialScale })
   const meshRef = useRef()
   const geom = nodes?.['map_v3006']?.geometry
 
-  // UVs
-  useMemo(() => {
-    if (geom && !geom.attributes.uv) {
-      geom.computeBoundingBox()
-      const bbox = geom.boundingBox
-      const positions = geom.attributes.position
-      const uvArr = new Float32Array(positions.count * 2)
-      for (let i = 0; i < positions.count; i++) {
-        uvArr[i * 2] = (positions.getX(i) - bbox.min.x) / (bbox.max.x - bbox.min.x)
-        uvArr[i * 2 + 1] = (positions.getY(i) - bbox.min.y) / (bbox.max.y - bbox.min.y)
-      }
-      geom.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2))
-    }
-  }, [geom])
-
   // Dot texture
   const dotTexture = useTexture('/assets/texture/spark.png')
+  //  const dotTexture = useTexture('/assets/texture/black-circle.jpg')
   useMemo(() => {
     if (dotTexture) {
       dotTexture.wrapS = THREE.RepeatWrapping
@@ -41,38 +27,39 @@ function DotsModel({ modelRef, initialPosition, initialRotation, initialScale })
     }
   }, [dotTexture])
 
-  // Shader
-  const vertexShader = `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `
-
-  const fragmentShader = `
-    varying vec2 vUv;
-    uniform float dotRepeatX;
-    uniform float dotRepeatY;
-    uniform sampler2D dotTexture;
-
-    void main() {
-      vec2 tileUV = fract(vUv * vec2(dotRepeatX, dotRepeatY));
-      vec4 texCol = texture2D(dotTexture, tileUV);
-      gl_FragColor = vec4(texCol.rgb, texCol.a);
-    }
-  `
-
+  // Custom shader for proper dot mapping
   const shaderMaterial = useMemo(
     () =>
       new THREE.ShaderMaterial({
         uniforms: {
-          dotRepeatX: { value: 50 },
-          dotRepeatY: { value: 50 },
           dotTexture: { value: dotTexture },
+          dotSize: { value: 0.15 }, // Size of each dot
         },
-        vertexShader,
-        fragmentShader,
+        vertexShader: `
+          varying vec3 vWorldPosition;
+          varying vec3 vNormal;
+          
+          void main() {
+            vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform sampler2D dotTexture;
+          uniform float dotSize;
+          varying vec3 vWorldPosition;
+          varying vec3 vNormal;
+          
+          void main() {
+            // Use world position for consistent dot sizing
+            vec2 uv = vWorldPosition.xy / dotSize;
+            vec2 tileUV = fract(uv);
+            
+            vec4 texColor = texture2D(dotTexture, tileUV);
+            gl_FragColor = vec4(texColor.rgb, texColor.a);
+          }
+        `,
         side: THREE.DoubleSide,
         transparent: true,
       }),

@@ -1,37 +1,45 @@
-'use client';
-import React, { Suspense, useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF, useTexture, Environment } from '@react-three/drei';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
-import * as THREE from 'three';
-import gsap from 'gsap';
-import ScrollTrigger from 'gsap/dist/ScrollTrigger';
-import { degToRad } from 'three/src/math/MathUtils';
-import { EffectComposer, ChromaticAberration } from '@react-three/postprocessing';
-import { Vector2 } from 'three';
+"use client";
+import React, { Suspense, useRef, useEffect, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import {
+  useGLTF,
+  useTexture,
+  Environment,
+} from "@react-three/drei";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import * as THREE from "three";
+import gsap from "gsap";
+import ScrollTrigger from "gsap/dist/ScrollTrigger";
+import { degToRad } from "three/src/math/MathUtils";
+import {
+  EffectComposer,
+  ChromaticAberration,
+} from "@react-three/postprocessing";
+import { Vector2 } from "three";
 
 gsap.registerPlugin(ScrollTrigger);
 
-
-function Model({ modelRef, initialPosition, initialRotation, initialScale }) {
-  const gltf = useGLTF('/models/intro.glb', true, undefined, loader => {
+function FirstModel({ modelRef, initialPosition, initialRotation, initialScale }) {
+  const gltf = useGLTF("/models/intro.glb", true, undefined, (loader) => {
     const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('/draco/');
+    dracoLoader.setDecoderPath("/draco/");
     loader.setDRACOLoader(dracoLoader);
   });
 
-  const texture = useTexture('/assets/texture/intro-texture.jpg');
+  const texture = useTexture("/assets/texture/intro-texture.jpg");
 
   useEffect(() => {
     if (gltf.scene && texture) {
-      gltf.scene.traverse(child => {
+      gltf.scene.traverse((child) => {
         if (child.isMesh) {
           child.material.map = texture;
+          child.material.side = THREE.DoubleSide;
           child.material.needsUpdate = true;
+          child.material.transparent = true;
         }
       });
-      
-      // Set initial transformations
+
       if (initialPosition) {
         gltf.scene.position.set(...initialPosition);
       }
@@ -41,8 +49,7 @@ function Model({ modelRef, initialPosition, initialRotation, initialScale }) {
       if (initialScale) {
         gltf.scene.scale.set(...initialScale);
       }
-      
-      // Set the ref once the scene is loaded
+
       if (modelRef) {
         modelRef.current = gltf.scene;
       }
@@ -50,34 +57,113 @@ function Model({ modelRef, initialPosition, initialRotation, initialScale }) {
   }, [gltf, texture, modelRef, initialPosition, initialRotation, initialScale]);
 
   useFrame(() => {
-  if (gltf.scene) {
-    const wind = gltf.scene.getObjectByName('Wind');
-    if (wind) {
-      ['Blade_1', 'Blade_2', 'Blade_3', 'Blade_4'].forEach(name => {
-        const blade = wind.getObjectByName(name);
-        if (blade) {
-          blade.rotation.x += 0.05; // Adjust rotation speed here
+    if (gltf.scene) {
+      const wind = gltf.scene.getObjectByName("Wind");
+      if (wind) {
+        ["Blade_1", "Blade_2", "Blade_3", "Blade_4"].forEach((name) => {
+          const blade = wind.getObjectByName(name);
+          if (blade) {
+            blade.rotation.x += 0.05;
+          }
+        });
+      }
+    }
+  });
+  return <primitive object={gltf.scene} />;
+}
+
+function SecondModel({ modelRef, initialPosition, initialRotation, initialScale }) {
+  const [gltf, setGltf] = useState(null);
+
+  useEffect(() => {
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    loader.setDRACOLoader(dracoLoader);
+
+    loader.load('/models/blocks.glb', (loadedGltf) => {
+      setGltf(loadedGltf);
+    });
+
+    return () => {
+      dracoLoader.dispose();
+    };
+  }, []);
+
+  const texture = useTexture('/assets/texture/blocks-texture.jpg');
+
+  useEffect(() => {
+    if (gltf && gltf.scene && texture) {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = 16;
+      texture.needsUpdate = true;
+
+      gltf.scene.traverse((child) => {
+        if (child.isMesh) {
+          let isCompChild = false;
+          let current = child;
+          while (current) {
+            if (current.name === 'Comp') {
+              isCompChild = true;
+              break;
+            }
+            current = current.parent;
+          }
+
+          if (isCompChild && child.geometry.attributes.uv) {
+            child.material = new THREE.MeshStandardMaterial({
+              map: texture,
+              color: 'white',
+              side: THREE.DoubleSide,
+              metalness: 0.1,
+              roughness: 0.8,
+              transparent: true,
+            });
+          } else {
+            child.material = new THREE.MeshStandardMaterial({
+              color: '#cccccc',
+              side: THREE.DoubleSide,
+              metalness: 0.1,
+              roughness: 0.8,
+              transparent: true,
+            });
+          }
+          child.castShadow = true;
+          child.receiveShadow = true;
         }
       });
+
+      if (initialPosition) gltf.scene.position.set(...initialPosition);
+      if (initialRotation) gltf.scene.rotation.set(...initialRotation);
+      if (initialScale) gltf.scene.scale.set(...initialScale);
+
+      // Start with opacity 0
+      gltf.scene.traverse((child) => {
+        if (child.isMesh && child.material) {
+          child.material.opacity = 0;
+        }
+      });
+
+      if (modelRef) modelRef.current = gltf.scene;
     }
-  }
-});
+  }, [gltf, texture, modelRef, initialPosition, initialRotation, initialScale]);
 
-
-  return <primitive object={gltf.scene} />;
+  return gltf ? <primitive object={gltf.scene} /> : null;
 }
 
 function CameraController({ cameraRef }) {
   const { camera } = useThree();
-  
+
   useEffect(() => {
     cameraRef.current = camera;
   }, [camera, cameraRef]);
-  
+
   return null;
 }
 
-function ParallaxGroup({ children, modelRef }) {
+function ParallaxGroup({ children, modelRef, parallaxStrength = 0.5 }) {
   const groupRef = useRef();
   const mouse = useRef({ x: 0, y: 0 });
 
@@ -95,12 +181,12 @@ function ParallaxGroup({ children, modelRef }) {
     if (!groupRef.current) return;
     groupRef.current.position.x = THREE.MathUtils.lerp(
       groupRef.current.position.x,
-      -mouse.current.x * 0.5,
+      -mouse.current.x * parallaxStrength,
       0.1
     );
     groupRef.current.position.y = THREE.MathUtils.lerp(
       groupRef.current.position.y,
-      mouse.current.y * 0.5,
+      mouse.current.y * parallaxStrength,
       0.1
     );
   });
@@ -110,132 +196,214 @@ function ParallaxGroup({ children, modelRef }) {
 
 export default function ThreeScene() {
   const cameraRef = useRef();
-  const modelRef = useRef();
+  const firstModelRef = useRef();
+  const secondModelRef = useRef();
   const containerRef = useRef();
-  const [modelLoaded, setModelLoaded] = useState(false);
+  const [firstModelLoaded, setFirstModelLoaded] = useState(false);
+  const [secondModelLoaded, setSecondModelLoaded] = useState(false);
 
-  // Define initial transformations
-  const initialPosition = [5, 5, -22]; 
-  const initialRotation = [degToRad(35), degToRad(-40), degToRad(-3)]; 
-  const initialScale = [1, 1, 1];
+  const firstInitialPosition = [15, 5, -20];
+  const firstInitialRotation = [degToRad(45), degToRad(-45), degToRad(0)];
+  const firstInitialScale = [1, 1, 1];
 
-  // Separate effect to detect when model is loaded
+  const secondInitialPosition = [-5.5, 0, 3];
+  const secondInitialRotation = [degToRad(30), degToRad(40), degToRad(0)];
+  const secondInitialScale = [1.2, 1.2, 1.2];
+
   useEffect(() => {
-    const checkModel = setInterval(() => {
-      if (modelRef.current) {
-        setModelLoaded(true);
-        clearInterval(checkModel);
+    const checkFirstModel = setInterval(() => {
+      if (firstModelRef.current) {
+        setFirstModelLoaded(true);
+        clearInterval(checkFirstModel);
       }
     }, 100);
 
-    return () => clearInterval(checkModel);
+    return () => clearInterval(checkFirstModel);
   }, []);
 
-  // GSAP ScrollTrigger effect
   useEffect(() => {
-    if (!modelLoaded || !modelRef.current || !containerRef.current || !cameraRef.current) return;
+    const checkSecondModel = setInterval(() => {
+      if (secondModelRef.current) {
+        setSecondModelLoaded(true);
+        clearInterval(checkSecondModel);
+      }
+    }, 100);
 
-    // Small delay to ensure DOM is ready
+    return () => clearInterval(checkSecondModel);
+  }, []);
+
+  useEffect(() => {
+    if (
+      !firstModelLoaded ||
+      !secondModelLoaded ||
+      !firstModelRef.current ||
+      !secondModelRef.current ||
+      !containerRef.current ||
+      !cameraRef.current
+    )
+      return;
+
     const timer = setTimeout(() => {
       ScrollTrigger.refresh();
 
       const ctx = gsap.context(() => {
-        const tl = gsap.timeline({
+        // First model timeline
+        const tl1 = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
-            start: 'top top',
-            end: 'bottom top',
-            // pin: true,
+            start: "top 80%",
+            end: "60% top",
+            scrub: true,
+            markers: true,
+          },
+        });
+
+        tl1
+          .to(firstModelRef.current.position, {
+            z: `-=${5}`,
+            x: `-=${12}`,
+            y: `+=${7}`,
+            ease: 'none',
+          })
+          .to(firstModelRef.current.rotation, {
+            y: `-=${degToRad(10)}`,
+            x: `-=${degToRad(10)}`,
+            ease: 'none',
+          }, '<')
+          .to(firstModelRef.current.position, {
+            z: `-=${17}`,
+            x: `-=${12}`,
+            y: `+=${18}`,
+            ease: 'none',
+          })
+          .to(firstModelRef.current.rotation, {
+            y: `-=${degToRad(10)}`,
+            x: `+=${degToRad(10)}`,
+            ease: 'none',
+          }, '<')
+          .to(firstModelRef.current.position, {
+            z: `-=${15}`,
+            x: `-=${10}`,
+            y: `+=${8}`,
+            ease: 'none',
+          })
+          .to(firstModelRef.current.rotation, {
+            y: `+=${degToRad(55)}`,
+            x: `+=${degToRad(10)}`,
+            ease: 'none',
+          })
+          .to(firstModelRef.current.position, {
+            z: '-13',
+            x: '-70',
+            y: `0`,
+            ease: 'none',
+          }, '<')
+          .to(firstModelRef.current.position, {
+            z: '-9',
+            // x: '-70',
+            // y: `0`,
+            ease: 'none',
+          })
+
+        // Fade out first model and fade in second model
+        const fadeTimeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "55% top",
+            end: "65% top",
             scrub: true,
             // markers: true,
           },
         });
-        
-        const camera = cameraRef.current;
 
-        tl.to(modelRef.current.position, {
-          x: 0,
-          
-        }, 0)
-        .to(modelRef.current.rotation, {
-            y: `-=${degToRad(15)}`,
+        fadeTimeline.to(firstModelRef.current.children, {
+          opacity: 0,
+          duration: 1,
+          stagger: 0.02,
+          onUpdate: function() {
+            firstModelRef.current.traverse((child) => {
+              if (child.isMesh && child.material) {
+                child.material.opacity = this.progress() === 1 ? 0 : 1 - this.progress();
+              }
+            });
+          }
         })
-        
-        .to(modelRef.current.position, {
-          y: `+=${13}`,
-           z: `-=${8}`,
-           x:`-=${8}`
-        })
-        .to(modelRef.current.position, {
-            y: `+=${15}`,
-           z: `-=${20}`,
-           x:`-=${15}`
-        })
-        
-        // .to(modelRef.current.rotation, {
-        //   y: `+=${degToRad(10)}`,
-        //   x: `+=${degToRad(10)}`,
-        // })
+        .to(secondModelRef.current.children, {
+          opacity: 1,
+          duration: 1,
+          stagger: 0.02,
+          onUpdate: function() {
+            secondModelRef.current.traverse((child) => {
+              if (child.isMesh && child.material) {
+                child.material.opacity = this.progress();
+              }
+            });
+          }
+        }, '<');
 
-        .to(camera.position, {
-        // x:`-=${5}`,
-         y: `+=${2}`,
-        // z: 15,
-      })
-      .to(camera.rotation, {
-        // x: degToRad(-10),
-        y: degToRad(-50),
-        // z: degToRad(0),
-      })
-      .to(modelRef.current.rotation, {
-          y: `-=${degToRad(10)}`,
-          x: `-=${degToRad(10)}`,
-        }, '>')
-        
-        
+        // Second model timeline
+        const tl2 = gsap.timeline({
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: '65% top',
+            end: 'bottom top',
+            scrub: true,
+            // markers: true,
+          },
+        });
 
+        tl2
+          .to(secondModelRef.current.rotation, {
+            y: `-=${degToRad(23)}`,
+          })
+          .to(secondModelRef.current.position, {
+            x: `+=${1.1}`,
+          }, '<');
 
       }, containerRef.current);
 
       return () => {
         ctx.revert();
-        ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+        ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
       };
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [modelLoaded]);
-
-  
+  }, [firstModelLoaded, secondModelLoaded]);
 
   return (
-    <div ref={containerRef} className="w-full h-[600vh] intro-model">
-      <div className="sticky top-0 w-full h-screen i">
-        <Canvas camera={{ position: [0, 0, 3], fov: 50 }} >
-           <CameraController cameraRef={cameraRef} />
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 5, 5]} intensity={1} />
-           {/* <axesHelper args={[10]} /> */}
-  {/* <gridHelper args={[100, 100]} /> */}  
+    <div ref={containerRef} className="w-full h-[900vh]">
+      <div className="sticky top-0 w-full h-screen">
+        <Canvas camera={{ position: [0, 0, 5], fov: 50 }} shadows>
+          <CameraController cameraRef={cameraRef} />
+          <ambientLight intensity={1.2} />
+<directionalLight position={[5, 5, 5]} intensity={0.5} castShadow color="#ffffff" />
+<hemisphereLight intensity={0.5} color="#ffffff" groundColor="#f0f0f0" />
           <Suspense fallback={null}>
-            <ParallaxGroup modelRef={modelRef}>
-              <Model 
-                modelRef={modelRef}
-                initialPosition={initialPosition}
-                initialRotation={initialRotation}
-                initialScale={initialScale}
+            <ParallaxGroup modelRef={firstModelRef} parallaxStrength={0.5}>
+              <FirstModel
+                modelRef={firstModelRef}
+                initialPosition={firstInitialPosition}
+                initialRotation={firstInitialRotation}
+                initialScale={firstInitialScale}
               />
             </ParallaxGroup>
-            <Environment preset="sunset" />
+            <ParallaxGroup modelRef={secondModelRef} parallaxStrength={0.04}>
+              <SecondModel
+                modelRef={secondModelRef}
+                initialPosition={secondInitialPosition}
+                initialRotation={secondInitialRotation}
+                initialScale={secondInitialScale}
+              />
+            </ParallaxGroup>
+            <Environment preset="city" />
           </Suspense>
           <EffectComposer>
-  <ChromaticAberration
-    offset={new Vector2(0.001, 0.001)} // tweak for intensity
-    blendFunction={2} 
-  />
-</EffectComposer>
-
-          {/* <OrbitControls /> */}
+            <ChromaticAberration
+              offset={new Vector2(0.001, 0.001)}
+              blendFunction={2}
+            />
+          </EffectComposer>
         </Canvas>
       </div>
     </div>

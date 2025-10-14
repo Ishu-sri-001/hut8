@@ -1,25 +1,22 @@
 'use client'
 
 import React, { Suspense, useRef, useMemo, useEffect, useState } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { useGLTF, useTexture } from '@react-three/drei'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { useGLTF, useTexture, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
 import gsap from 'gsap'
 import ScrollTrigger from 'gsap/dist/ScrollTrigger'
-gsap. registerPlugin(ScrollTrigger)
 import { degToRad } from 'three/src/math/MathUtils'
-import { PerspectiveCamera } from '@react-three/drei'
-
 
 gsap.registerPlugin(ScrollTrigger)
 
+// ======== DOTS MODEL ==========
 function DotsModel({ modelRef, initialPosition, initialRotation, initialScale }) {
   const { nodes } = useGLTF('/models/plain.glb')
   const meshRef = useRef()
-
   const geom = nodes?.['map_v3006']?.geometry
 
-  // Compute UVs if missing
+  // UVs
   useMemo(() => {
     if (geom && !geom.attributes.uv) {
       geom.computeBoundingBox()
@@ -44,7 +41,7 @@ function DotsModel({ modelRef, initialPosition, initialRotation, initialScale })
     }
   }, [dotTexture])
 
-  // Shaders
+  // Shader
   const vertexShader = `
     varying vec2 vUv;
     void main() {
@@ -82,29 +79,42 @@ function DotsModel({ modelRef, initialPosition, initialRotation, initialScale })
     [dotTexture]
   )
 
-  // Ensure modelRef points to the outer group
+  // Attach ref
   useEffect(() => {
-    if (meshRef.current && modelRef) {
-      modelRef.current = meshRef.current
-    }
+    if (meshRef.current && modelRef) modelRef.current = meshRef.current
   }, [modelRef])
 
   if (!geom) return null
 
-  // Wrap mesh inside group so transform stays consistent
   return (
-    <group
-      ref={meshRef}
-      position={initialPosition}
-      rotation={initialRotation}
-      scale={initialScale}
-    >
+    <group ref={meshRef} position={initialPosition} rotation={initialRotation} scale={initialScale}>
       <mesh geometry={geom}>
         <primitive object={shaderMaterial} attach="material" />
       </mesh>
     </group>
   )
 }
+
+// ======== MOVING IMAGE PLANE ==========
+function MovingImage({ modelRef }) {
+  const texture = useTexture('/assets/Images/impact.png') 
+  const planeRef = useRef()
+
+  useFrame(() => {
+    if (!planeRef.current || !modelRef.current) return
+    // Slight parallax follow effect
+    planeRef.current.position.z = modelRef.current.position.z * 0.5
+    planeRef.current.position.y = modelRef.current.position.y * 0.5
+  })
+
+  return (
+    <mesh ref={planeRef} position={[0, 0, -9]} scale={[2.2,2.2,2.2]}>
+      <planeGeometry args={[10, 6]} />
+      <meshBasicMaterial map={texture} transparent opacity={1.0} />
+    </mesh>
+  )
+}
+
 
 export default function Page() {
   const containerRef = useRef()
@@ -116,7 +126,7 @@ export default function Page() {
   const initialRotation = [degToRad(15), degToRad(0), degToRad(0)]
   const initialScale = [1, 1, 1]
 
-  // Wait for model ref to be set
+  // Wait for model to mount
   useEffect(() => {
     const interval = setInterval(() => {
       if (modelRef.current) {
@@ -127,7 +137,7 @@ export default function Page() {
     return () => clearInterval(interval)
   }, [])
 
-  // GSAP ScrollTrigger animation
+  // GSAP ScrollTrigger
   useEffect(() => {
     if (!modelLoaded || !modelRef.current || !containerRef.current || !cameraRef.current) return
 
@@ -151,30 +161,24 @@ export default function Page() {
         modelRef.current.rotation,
         {
           y: `+=${degToRad(-10)}`,
-       
           ease: 'none',
         },
         '<'
       )
       tl.to(modelRef.current.position, {
-        y: `-${10}`,
-        z: `-${10}`,
+        y: `-${5}`,
+        // z: `-${10}`,
         ease: 'none',
       })
-     
       .to(
         cameraRef.current.rotation,
         {
           x: `+=${degToRad(-45)}`,
-          
           ease: 'none',
         },
         '<'
       )
-      .to(cameraRef.current.position, {
-        y: `+${5}`,
-        ease: 'none',
-      },'<')
+      .to(cameraRef.current.position, { y: `+${5}`, ease: 'none' }, '<')
     }, containerRef)
 
     return () => {
@@ -186,15 +190,18 @@ export default function Page() {
   return (
     <div ref={containerRef} className="w-full h-[500vh] bg-white">
       <div className="sticky top-0 w-full h-screen">
-        <Canvas >
-          <PerspectiveCamera
-      makeDefault
-      ref={cameraRef}
-      position={[0, 0, 5]}
-      fov={50}
-    />
+        <Canvas
+          onCreated={({ scene }) => {
+            scene.fog = new THREE.Fog(0xffffff, 5, 25) // fog added
+            scene.background = new THREE.Color(0xf0f0f0)
+          }}
+        >
+          <PerspectiveCamera makeDefault ref={cameraRef} position={[0, 0, 5]} fov={50} />
           <ambientLight intensity={1} />
           <Suspense fallback={null}>
+          
+            <MovingImage modelRef={modelRef} />
+
             <DotsModel
               modelRef={modelRef}
               initialPosition={initialPosition}

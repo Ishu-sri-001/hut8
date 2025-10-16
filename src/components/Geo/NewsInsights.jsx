@@ -18,7 +18,7 @@ const newsItems = [
 
 const NewsInsights = () => {
   return (
-    <section className="h-full w-full py-[10%] px-[2vw]">
+    <section className="h-full w-full py-[10%] px-[2vw] dark-section">
       <div className="w-full h-[0.2px] bg-gray-400" />
 
       <h2 className="text-[6.5vw] font-medium font-display pb-[3vw]">

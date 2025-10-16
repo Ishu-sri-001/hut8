@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function NotesSection() {
   return (
-    <section className='py-[5%] px-[2vw]'>
+    <section className='py-[5%] px-[2vw] dark-section'>
          <div className="w-full h-[0.2px] bg-gray-300 my-[2vw]" />
     <div className="flex   w-full">
         

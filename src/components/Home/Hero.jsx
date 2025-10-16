@@ -33,8 +33,8 @@ const Hero = () => {
 
         </div>
         </div> */}
-        <div className='w-full h-[0.1px] bg-white'>
-        </div>
+        <div className='w-full h-[1px] bg-white/50' />
+        
         
         <div className='flex w-full py-[2vw]  font-display text-white'>
             <p className=' text-[2vw] font-medium w-[40%]'>

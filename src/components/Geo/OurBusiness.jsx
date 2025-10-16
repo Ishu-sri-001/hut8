@@ -62,7 +62,7 @@ const sectionsData = [
 
 const OurBusiness = () => {
   return (
-    <div className="h-full w-full py-[10%] px-[2vw]">
+    <div dark-logo className="h-full dark-section w-full py-[10%] px-[2vw]">
       <div className="w-full h-[0.2vw] bg-gray-300" />
       <div className="space-y-[4vw]">
         <h2 className="text-[6.5vw] font-medium font-display">

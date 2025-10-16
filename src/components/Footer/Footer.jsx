@@ -3,7 +3,7 @@ import Image from 'next/image'
 
 const Footer = () => {
   return (
-    <section className='px-[2vw] h-full bg-gray-300 py-[2%]'>
+    <section className='px-[2vw] h-full bg-gray-300 py-[2%] dark-section'>
 
         <div className='flex justify-between'>
 
@@ -29,7 +29,7 @@ const Footer = () => {
                             width={700}
                             height={700}
                             alt="logo"
-                            className="w-full h-full header-logo object-cover brightness-0"
+                            className="w-full h-full object-cover brightness-0"
                           />
             </div>
 

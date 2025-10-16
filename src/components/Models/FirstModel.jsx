@@ -254,7 +254,7 @@ export default function ThreeScene() {
             start: "top 80%",
             end: "60% top",
             scrub: true,
-            markers: true,
+            // markers: true,
           },
         });
 
@@ -370,9 +370,9 @@ export default function ThreeScene() {
 
     return () => clearTimeout(timer);
   }, [firstModelLoaded, secondModelLoaded]);
-
+  
   return (
-    <div ref={containerRef} className="w-full h-[900vh]">
+    <div ref={containerRef} className="w-full h-[900vh] dark-section">
       <div className="sticky top-0 w-full h-screen">
         <Canvas camera={{ position: [0, 0, 5], fov: 50 }} shadows>
           <CameraController cameraRef={cameraRef} />

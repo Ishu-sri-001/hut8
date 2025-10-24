@@ -16,6 +16,8 @@ import {
 import { Vector2 } from "three";
 
 
+
+
 gsap.registerPlugin(ScrollTrigger);
 
 // Configure Draco loader
@@ -147,7 +149,6 @@ function Scene() {
 
     camera.updateProjectionMatrix();
 
-    // Or you can make the camera look at a point
     // camera.lookAt(0, -30, 0);
   });
 

@@ -48,14 +48,14 @@ const NewsInsights = () => {
              {newsItems.map((item, index) => (
         <div
           key={index}
-          className="w-[30%] cursor-pointer flex flex-col group transition-transform hover:scale-[1.02]"
+          className="w-[30%] cursor-pointer flex flex-col group transition-all ease-in-out duration-300 hover:scale-[1.02]"
         >
           <div className="relative w-full h-[60vh] overflow-hidden">
             <Image
               src={item.image}
               alt={item.title}
               fill
-              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+              className="object-cover w-full h-full transition-transform duration-500 ease-in-out group-hover:scale-105"
             />
           </div>
           <div className="flex justify-between items-start mt-3">

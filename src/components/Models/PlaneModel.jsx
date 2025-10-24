@@ -31,7 +31,7 @@ function DotsModel({ modelRef, initialPosition, initialRotation, initialScale })
       new THREE.ShaderMaterial({
         uniforms: {
           dotTexture: { value: dotTexture },
-          dotSize: { value: 0.13 },
+          dotSize: { value: 0.1 },
         },
         vertexShader: `
           varying vec3 vWorldPosition;

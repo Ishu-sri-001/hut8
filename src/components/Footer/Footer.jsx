@@ -1,11 +1,48 @@
+'use client'
+import { useEffect } from 'react'
 import React from 'react'
 import Image from 'next/image'
+import gsap from 'gsap'
+import ScrollTrigger from 'gsap/dist/ScrollTrigger'
+gsap.registerPlugin(ScrollTrigger);
 
 const Footer = () => {
-  return (
-    <section className='px-[2vw] h-full bg-gray-300 py-[2%] dark-section'>
 
-        <div className='flex justify-between'>
+
+    useEffect(() => {
+      const ctx= gsap.context(() => {
+          gsap.fromTo('.footer-logo', {
+            scaleY:0,
+          }, {
+            scaleY: '100%',
+            scrollTrigger: {
+              trigger: '.footer-logo-section',
+              start: '15% bottom',
+              end: 'bottom bottom',
+              scrub: true,
+              // markers: true,
+            }
+          })
+          gsap.fromTo('.footer-lines', {
+            scaleY:0,
+          }, {
+            scaleY: '100%',
+            scrollTrigger: {
+              trigger: '.footer-logo-section',
+              start: '30% bottom',
+              end: 'bottom bottom',
+              scrub: true,
+              // markers: true,
+            }
+          })
+      })
+      return () => ctx.revert();
+    })
+
+  return (
+    <section className=' h-full bg-[#bcbfb0] py-[2%] dark-section'>
+
+        <div className='flex justify-between px-[2vw]'>
 
             <div className='w-[30%]'>
                 <p className='font-display'>Hut8</p>
@@ -35,9 +72,9 @@ const Footer = () => {
 
         </div>
 
-        <div className='w-full bg-gray-500 h-[0.2px] my-[2vw]' />
+        <div className='w-full bg-gray-500 h-[0.2px] my-[2vw] px-[2vw]' />
         
-        <div className='flex justify-between'>
+        <div className='flex justify-between px-[2vw]'>
              <div className="w-[25%] ">
         <h3 className="text-[0.9vw] font-normal text-gray-700 mb-[2vw]">
           High Performance Computing
@@ -112,6 +149,48 @@ const Footer = () => {
         </nav>
       </div>
       </div>
+        </div>
+
+         <div className='w-full bg-gray-500 h-[0.2px] my-[2vw] px-[2vw]' />
+
+        <div className="w-full  py-[2.5vw] px-[2vw] flex items-center gap-[2vw] justify-start text-[1.2vw] text-gray-700">
+  {/* Left icons */}
+  <div className="flex items-center justify-start gap-[2vw] w-[35%] ">
+    <Image src='/assets/svg/linkedin.svg' height={1000} width={1000} alt='footer-logo' className='h-[1vw] w-[1vw] cursor-pointer' />
+     <Image src='/assets/svg/twitter.svg' height={1000} width={1000} alt='footer-logo' className='h-[1vw] w-[1vw] cursor-pointer' />
+  </div>
+
+  {/* Center info */}
+  <div className="flex items-center gap-[2vw] w-[40%]  text-gray-500">
+    <span>info@hut8.com</span>
+    <span>1101 Brickell Ave, N-1500, Miami, FL 33131</span>
+  </div>
+
+  {/* Right links */}
+  <div className="flex items-center gap-[2.5vw] text-black">
+    <p className="hover:underline cursor-pointer">Terms of Use</p>
+    <p className="hover:underline cursor-pointer">Privacy Policy</p>
+  </div>
+</div>
+
+
+
+        <div className='w-full h-fit footer-logo-section relative'>
+          <div className='w-[90%] h-full mx-auto footer-logo scale-y-0'>
+            <Image src='/assets/svg/footer-logo.svg' height={1000} width={1000} alt='footer-logo' className='h-full w-full object-cover' />
+          </div>
+
+          <div className='absolute w-full h-full top-0'>
+            <div className="flex flex-col gap-[1.5vw]  origin-top">
+    {[...Array(10)].map((_, i) => (
+      <div key={i} className="flex flex-col h-[2vw] w-[100vw] footer-lines scale-y-0">
+        <div className="h-[1vw] bg-[#bcbfb0]" />
+        <div className="h-[1vw] bg-black" />
+      </div>
+    ))}
+  </div>
+
+          </div>
         </div>
     </section>
   )
